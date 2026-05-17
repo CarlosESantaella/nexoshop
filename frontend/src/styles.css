@@ -1,0 +1,82 @@
+@import "tailwindcss";
+
+@theme {
+  /* Primary - Teal (from logo) */
+  --color-primary-50: #edfafa;
+  --color-primary-100: #d0f2f4;
+  --color-primary-200: #a1e2e6;
+  --color-primary-300: #72cdd3;
+  --color-primary-400: #4db3bb;
+  --color-primary-500: #3596a1;
+  --color-primary-600: #2a7d8a;
+  --color-primary-700: #21606d;
+  --color-primary-800: #1c4a55;
+  --color-primary-900: #163035;
+
+  /* Accent - Mint/Seafoam (from logo highlights) */
+  --color-accent-50: #f0fdf8;
+  --color-accent-100: #e2f9f0;
+  --color-accent-200: #c5f0e0;
+  --color-accent-300: #a0e3cc;
+  --color-accent-400: #7dd4b8;
+  --color-accent-500: #5cc4a6;
+  --color-accent-600: #3ca080;
+  --color-accent-700: #2f8268;
+  --color-accent-800: #246550;
+  --color-accent-900: #1a4a3a;
+
+  /* Dark Slate (Header/Footer - logo navy) */
+  --color-slate-800: #1a3347;
+  --color-slate-900: #132736;
+
+  /* Fonts */
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-heading: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+}
+
+/* Base styles */
+body {
+  font-family: var(--font-sans);
+  color: #1f2937;
+  background-color: #f9fafb;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* GPU-accelerate common animated elements */
+[class*="hover:-translate"],
+[class*="hover:scale"],
+[class*="group-hover:scale"],
+[class*="group-hover:translate"] {
+  will-change: transform;
+}
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #94a3b8;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
