@@ -1,58 +1,181 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# NexoShop — Backend (API)
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+API REST de la tienda online **NexoShop** construida con **Laravel 13** y **PHP 8.3+**. Expone endpoints públicos para navegación, endpoints autenticados (Sanctum) para usuarios y un panel administrativo con control de productos, pedidos, cupones, reseñas y ajustes.
 
-## About Laravel
+## Stack técnico
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+| Componente | Tecnología |
+|---|---|
+| Framework | Laravel 13 |
+| PHP | 8.3+ |
+| Autenticación | Laravel Sanctum 4 (SPA + Personal Access Tokens) |
+| Pagos | MercadoPago DX-PHP 3.8 |
+| Imágenes | Intervention Image 4 |
+| Base de datos | SQLite (default) / MySQL / PostgreSQL |
+| Cache & Queue | Database driver |
+| Testing | PHPUnit 12 + Mockery |
+| Linter | Laravel Pint |
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Estructura
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
-
-## Learning Laravel
-
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
-
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
-
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
-
-```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+```
+backend/
+├── app/
+│   ├── Http/
+│   │   ├── Controllers/Api/        # Controladores públicos y autenticados
+│   │   │   └── Admin/              # Controladores del panel admin
+│   │   └── Middleware/             # AdminMiddleware
+│   ├── Models/                     # Eloquent: User, Product, Order, Cart, ...
+│   └── Services/                   # CartService, OrderService, ImageService,
+│                                   # ExchangeRateService, SettingService
+├── database/
+│   ├── migrations/                 # Esquema de tablas
+│   ├── seeders/                    # Datos de demo
+│   └── factories/
+├── routes/
+│   ├── api.php                     # Rutas REST
+│   └── web.php
+└── tests/                          # Suites PHPUnit
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+## Modelo de dominio
 
-## Contributing
+- **User** — usuarios con rol (`admin` / cliente), perfil y direcciones
+- **Product / ProductImage / Category** — catálogo con imágenes múltiples y categorías jerárquicas
+- **Cart / CartItem** — carrito persistente por sesión o usuario, con merge al login
+- **Order / OrderItem** — pedidos con estados, totales, dirección de envío
+- **Coupon** — descuentos por porcentaje o monto fijo con reglas de validez
+- **Review** — reseñas de productos con moderación (aprobación admin)
+- **Wishlist** — lista de deseos por usuario
+- **Address** — direcciones de envío múltiples con dirección por defecto
+- **Setting** — configuraciones de la tienda agrupadas (publicas/privadas)
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+## Endpoints principales
 
-## Code of Conduct
+Base URL: `/api`
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+### Públicos
+- `GET  /health` — health check
+- `GET  /exchange-rate` — tipo de cambio PEN ↔ USD
+- `GET  /products` · `/products/featured` · `/products/new-arrivals` · `/products/{slug}` · `/products/{slug}/related`
+- `GET  /categories` · `/categories/{slug}`
+- `GET  /products/{slug}/reviews`
+- `GET  /search` · `/search/autocomplete`
+- `*    /cart` · `/cart/items` — carrito por sesión o auth
+- `POST /coupons/validate`
+- `POST /payments/webhook` — webhook MercadoPago
 
-## Security Vulnerabilities
+### Autenticación (`/api/auth`, throttle 30/min)
+- `POST /register` · `/login` · `/forgot-password` · `/reset-password`
+- `POST /logout` · `GET /user` · `PUT /profile` · `PUT /change-password` *(auth)*
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+### Autenticados (`auth:sanctum`)
+- `POST /cart/merge` — fusiona carrito de sesión con el del usuario al iniciar sesión
+- `*    /wishlist` · `/wishlist/toggle` · `/wishlist/check`
+- `*    /addresses` (API resource) + `PATCH /addresses/{id}/default`
+- `GET  /orders` · `POST /orders` · `GET /orders/{orderNumber}` · `PATCH /orders/{orderNumber}/cancel`
+- `POST /products/{slug}/reviews`
+- `POST /payments/create-preference` — genera preferencia MercadoPago
 
-## License
+### Admin (`auth:sanctum` + `admin`, prefix `/api/admin`)
+- `GET /stats` — métricas del dashboard
+- `*   /products` — CRUD + toggle featured/active + upload/delete/set-primary de imágenes
+- `*   /categories` — CRUD
+- `GET /orders` · `GET /orders/{id}` · `PATCH /orders/{id}/status`
+- `GET /users` · `PATCH /users/{id}/toggle-active`
+- `*   /coupons` — CRUD
+- `GET /reviews` · `PATCH /reviews/{id}/approve` · `PATCH /reviews/{id}/reject`
+- `GET /settings` · `GET /settings/{group}` · `PUT /settings`
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+> **Rate limiting:** todas las rutas tienen throttle (10–60 requests/min según endpoint).
+
+## Requisitos
+
+- PHP **8.3+** con extensiones: `bcmath`, `ctype`, `fileinfo`, `json`, `mbstring`, `openssl`, `pdo`, `tokenizer`, `xml`, `gd` o `imagick`
+- Composer 2.x
+- Node.js 18+ y npm (para assets de Vite)
+- Base de datos: SQLite (por defecto), MySQL 8 o PostgreSQL 14+
+
+## Instalación
+
+```bash
+# 1. Instalar dependencias
+composer install
+
+# 2. Configurar entorno
+cp .env.example .env
+php artisan key:generate
+
+# 3. Base de datos (SQLite por defecto)
+touch database/database.sqlite       # solo SQLite
+php artisan migrate --seed
+
+# 4. Storage symlink (uploads de imágenes)
+php artisan storage:link
+
+# 5. (Opcional) Build de assets si se sirven vistas
+npm install && npm run build
+```
+
+## Variables de entorno relevantes
+
+```env
+APP_URL=http://localhost:8000
+FRONTEND_URL=http://localhost:4200
+SANCTUM_STATEFUL_DOMAINS=localhost:4200
+
+DB_CONNECTION=sqlite                 # o mysql / pgsql
+
+MERCADOPAGO_ACCESS_TOKEN=            # credencial privada MP
+MERCADOPAGO_PUBLIC_KEY=              # credencial pública MP
+MERCADOPAGO_WEBHOOK_SECRET=          # firma del webhook
+```
+
+## Ejecución
+
+```bash
+# Servidor de desarrollo (http://localhost:8000)
+php artisan serve
+
+# Modo full-stack (server + queue + vite en paralelo)
+composer dev
+
+# Worker de colas (jobs, emails, etc.)
+php artisan queue:listen
+
+# Logs en tiempo real
+php artisan pail
+```
+
+## Testing
+
+```bash
+composer test           # ejecuta toda la suite
+php artisan test --filter=ProductTest
+./vendor/bin/pint       # formateo de código
+```
+
+## Autenticación
+
+La API usa **Laravel Sanctum** con dos modos:
+
+- **SPA stateful** (cookie + CSRF) para el frontend Angular en `SANCTUM_STATEFUL_DOMAINS`
+- **Personal Access Tokens** (Bearer header) para clientes móviles o terceros
+
+Tras `POST /api/auth/login` se devuelve el token en la respuesta y se incluye en cabeceras como:
+
+```
+Authorization: Bearer <token>
+```
+
+## Pagos (MercadoPago)
+
+1. El frontend pide `POST /api/payments/create-preference` con el carrito y dirección
+2. El backend crea la preferencia y devuelve `init_point`
+3. El usuario completa el pago en el checkout de MercadoPago
+4. MercadoPago llama a `POST /api/payments/webhook` con el resultado
+5. El pedido pasa a estado `paid` (o `failed`) y se descuenta stock
+
+## Licencia
+
+Proyecto propietario — © Carlos Santaella.
